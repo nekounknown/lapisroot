@@ -1,15 +1,20 @@
-# lapisroot — Temporary root for the Redmi Note 15 Pro 5G (KernelSU LKM)
+# lapisroot — Temporary root for the Redmi Note 15 Pro 5G (KernelSU LKM and Shizuku LPE)
 
 Target device: **Redmi Note 15 Pro 5G** (codename `lapis` / MediaTek **MT6878** Dimensity 7400-Ultra)
 
-A Linux tool that temporarily roots the device by injecting **KernelSU's LKM** (Loadable Kernel Module) into the `init_boot` partition. It does not replace the kernel itself. `stop` writes the original `init_boot` back byte-for-byte.
+A Linux toolkit with two routes to temporary root. The `lapisroot` CLI injects **KernelSU's LKM** (Loadable Kernel Module) into the `init_boot` partition; it does not replace the kernel itself, and `stop` writes the original `init_boot` back byte-for-byte. The `apk/` route runs a local payload through Shizuku and does not touch `init_boot` at all.
+
+- **`apk/` (Shizuku LPE)** — **no bootloader unlock required.** No fastboot, no `init_boot` write, no reboot.
+- **`lapisroot` CLI (KernelSU LKM)** — requires an unlocked bootloader, because it flashes `init_boot` via fastboot.
+
+The rest of this document describes the KernelSU route unless stated otherwise.
 
 ---
 
 ## What you should know first (important)
 
-1. **An unlocked bootloader is required.**
-   This tool is not an exploit that bypasses locking. It flashes `init_boot` via fastboot, so nothing works if the bootloader is locked.
+1. **An unlocked bootloader is required for the KernelSU `init_boot` route.**
+   That route is not an exploit that bypasses locking: it flashes `init_boot` via fastboot, so it does nothing on a locked bootloader. **Bootloader unlock is not required for the `apk/` Shizuku route.**
 
 2. **A full RAM boot via `fastboot boot` is not possible.**
    `lapis` uses the Android 13+ layout (the generic ramdisk lives in `init_boot`), so `init_boot.img` does not contain the kernel. The "vanishes on reboot" RAM boot approach is unavailable; instead, `init_boot` is rewritten and restored by `stop`.
@@ -19,6 +24,19 @@ A Linux tool that temporarily roots the device by injecting **KernelSU's LKM** (
 
 4. **The stock `init_boot.img` from the same build is mandatory.**
    Flashing an image from a different build will make the device unbootable due to AVB / anti-rollback. Always extract it from the fastboot ROM that matches the current build.
+
+---
+
+## No bootloader unlock: the Shizuku APK route
+
+The `apk/` project gets a shell on the device without touching `init_boot` or fastboot:
+
+1. Enable USB debugging and start Shizuku (via `adb` or wireless debugging).
+2. Install the APK from the release: `adb install -r lapisroot.apk`.
+3. Launch it: `adb shell am start -n com.lapisroot.exploit/.MainActivity --ez auto true`.
+4. Grant the Shizuku permission prompt.
+
+The APK runs `libexploit.so shell` through Shizuku's shell and prints the result in the app log and `last_run.txt`. This route **does not require a bootloader unlock**, does not flash anything, and does not reboot. What it can do is limited to the payload and the device build; it does not provide KernelSU's persistent `su`.
 
 ---
 
@@ -40,7 +58,8 @@ At boot, `ksuinit` loads `kernelsu.ko`, and KernelSU's `su` becomes available. T
 - Linux PC (x86_64 or aarch64)
 - `adb` / `fastboot` (Android Platform Tools)
 - Python 3.10 or newer
-- A `lapis` with an unlocked bootloader
+- A `lapis` with an unlocked bootloader for the KernelSU route (not required for the `apk/` Shizuku route)
+- Shizuku running on the device for the `apk/` route
 - The fastboot ROM (`.tgz`) or `init_boot.img` matching the current build
 - The device's KMI (auto-detected from `uname -r` when connected via `adb`)
 
@@ -163,6 +182,7 @@ A practical order for hunting known LPEs with a locked bootloader is `hunt` -> i
 - Device data loss, bricking, and warranty loss are the user's responsibility.
 - Always use a stock image that matches the current build.
 - After a Xiaomi HyperOS update, `init_boot` changes, so you must re-extract the stock image and run `start` again.
+- The `apk/` Shizuku route grants only what the payload provides; it does not give KernelSU's persistent `su`.
 
 ---
 
