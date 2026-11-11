@@ -1,17 +1,32 @@
-# lapisroot — Temporary root for the Redmi Note 15 Pro 5G (KernelSU LKM and Shizuku LPE)
+# lapisroot — Temporary root for the Redmi Note 15 Pro 5G
 
-Target device: **Redmi Note 15 Pro 5G** (codename `lapis` / MediaTek **MT6878** Dimensity 7400-Ultra)
+> **Relevant CVE: [CVE-2026-98260](https://nvd.nist.gov/vuln/detail/CVE-2026-98260)** — Linux `exec` POSIX CPU timer use-after-free. Affects 5.7–6.1.190, fixed in 6.1.191. The reference `lapis` kernel (6.1.138) is in range, and `hunt` flags it.
 
-**Region support:** all regions. The tool is region-agnostic: it keys off the `lapis` codename/platform and the stock `init_boot` you supply, not the sales region. Bootloader unlock eligibility is a separate Xiaomi policy — see "Bootloader is locked" below.
+**Device:** Redmi Note 15 Pro 5G (codename `lapis`, MediaTek MT6878 Dimensity 7400-Ultra)
 
-> **Relevant CVE: [CVE-2026-98260](https://nvd.nist.gov/vuln/detail/CVE-2026-98260)** — Linux `exec` POSIX CPU timer use-after-free; affects 5.7–6.1.190, fixed in 6.1.191. The reference `lapis` kernel (6.1.138) is in range, and `hunt` flags it.
+**Region support:** all regions. The tool keys off the `lapis` codename/platform and the stock `init_boot` you supply, not the sales region. Bootloader unlock eligibility is a separate Xiaomi policy; see [Bootloader is locked](#bootloader-is-locked).
 
-A Linux toolkit with two routes to temporary root. The `lapisroot` CLI injects **KernelSU's LKM** (Loadable Kernel Module) into the `init_boot` partition; it does not replace the kernel itself, and `stop` writes the original `init_boot` back byte-for-byte. The `apk/` route runs a local payload through Shizuku and does not touch `init_boot` at all.
+---
 
-- **`apk/` (Shizuku LPE)** — **no bootloader unlock required.** No fastboot, no `init_boot` write, no reboot.
-- **`lapisroot` CLI (KernelSU LKM)** — requires an unlocked bootloader, because it flashes `init_boot` via fastboot.
+## What you should know first
 
-The rest of this document describes the KernelSU route unless stated otherwise.
+1. **There are two routes with different prerequisites.**
+   - `apk/` (Shizuku LPE): **no bootloader unlock**, no fastboot, no `init_boot` write, no reboot.
+   - `lapisroot` CLI (KernelSU LKM): **requires an unlocked bootloader**, because it flashes `init_boot` via fastboot.
+
+2. **A full RAM boot via `fastboot boot` is not possible.**
+   `lapis` uses the Android 13+ layout (the generic ramdisk lives in `init_boot`), so `init_boot.img` does not contain the kernel. The "vanishes on reboot" RAM boot approach is unavailable; instead, `init_boot` is rewritten and restored by `stop`.
+
+3. **Root from the KernelSU route persists across reboots until `stop`.**
+   "Temporary" means "can be reliably reverted with `stop`". KernelSU Manager's "Temporary uninstall" can disable root until the next reboot.
+
+4. **The stock `init_boot.img` from the same build is mandatory for the KernelSU route.**
+   Flashing an image from a different build will make the device unbootable due to AVB / anti-rollback. Always extract it from the fastboot ROM that matches the current build.
+
+5. **The APK ships two kernel profiles.**
+   `libexploit_138.so` for `6.1.138-android14-11-g51f8c580613d` and `libexploit_157.so` for `6.1.157-android14-11-geadf9a793a09`. Other kernels are rejected with a log message.
+
+---
 
 ## CVE coverage at a glance
 
@@ -37,36 +52,55 @@ The catalog is curated and non-exhaustive; verify every entry against the vendor
 
 ---
 
-## What you should know first (important)
+## Route A — Shizuku APK (no bootloader unlock)
 
-1. **An unlocked bootloader is required for the KernelSU `init_boot` route.**
-   That route is not an exploit that bypasses locking: it flashes `init_boot` via fastboot, so it does nothing on a locked bootloader. **Bootloader unlock is not required for the `apk/` Shizuku route.**
+The `apk/` project gets a shell on the device without touching `init_boot` or fastboot.
 
-2. **A full RAM boot via `fastboot boot` is not possible.**
-   `lapis` uses the Android 13+ layout (the generic ramdisk lives in `init_boot`), so `init_boot.img` does not contain the kernel. The "vanishes on reboot" RAM boot approach is unavailable; instead, `init_boot` is rewritten and restored by `stop`.
+### Requirements
 
-3. **Root persists across reboots until you run `stop`.**
-   "Temporary" means "can be reliably reverted with `stop`". KernelSU Manager's "Temporary uninstall" can disable root until the next reboot.
+- Android device with USB debugging enabled
+- Shizuku running (started via `adb` or wireless debugging)
+- The `lapisroot.apk` release asset (`arm64-v8a`)
 
-4. **The stock `init_boot.img` from the same build is mandatory.**
-   Flashing an image from a different build will make the device unbootable due to AVB / anti-rollback. Always extract it from the fastboot ROM that matches the current build.
+### Usage
+
+1. Install the APK:
+
+   ```bash
+   adb install -r lapisroot.apk
+   ```
+
+2. Run the exploit:
+
+   ```bash
+   adb shell am start -n com.lapisroot.exploit/.MainActivity --ez auto true
+   ```
+
+3. Grant the Shizuku permission prompt on the device.
+
+The app selects the payload from `os.version` and runs its `fake` profile through Shizuku's shell. Results are printed in the app log and `last_run.txt`.
+
+Extra entry points:
+
+```bash
+# Run the local perf diagnostic
+adb shell am start -n com.lapisroot.exploit/.MainActivity --ez perfdiag true
+
+# Trigger the Pwned notification/screen directly
+adb shell am start -n com.lapisroot.exploit/.MainActivity --ez pwned true
+```
+
+### Limits
+
+This route **does not require a bootloader unlock**, does not flash anything, and does not reboot. It provides only what the payload grants on the matching build; it does not provide KernelSU's persistent `su`.
 
 ---
 
-## No bootloader unlock: the Shizuku APK route
+## Route B — KernelSU LKM (unlocked bootloader)
 
-The `apk/` project gets a shell on the device without touching `init_boot` or fastboot:
+The `lapisroot` CLI injects **KernelSU's LKM** (Loadable Kernel Module) into the `init_boot` partition. It does not replace the kernel itself, and `stop` writes the original `init_boot` back byte-for-byte.
 
-1. Enable USB debugging and start Shizuku (via `adb` or wireless debugging).
-2. Install the APK from the release: `adb install -r lapisroot.apk`.
-3. Launch it: `adb shell am start -n com.lapisroot.exploit/.MainActivity --ez auto true`.
-4. Grant the Shizuku permission prompt.
-
-The APK selects the payload from `os.version` — `libexploit_138.so` for kernel `6.1.138-...g51f8c580613d` or `libexploit_157.so` for `6.1.157-...geadf9a793a09` — and runs its `fake` profile through Shizuku's shell. Results are printed in the app log and `last_run.txt`; unsupported kernels are rejected with a log message. This route **does not require a bootloader unlock**, does not flash anything, and does not reboot. What it can do is limited to the payload and the device build; it does not provide KernelSU's persistent `su`.
-
----
-
-## How it works
+### How it works
 
 KernelSU's `ksud boot-patch` performs the following on the `init_boot.img` ramdisk:
 
@@ -77,67 +111,62 @@ KernelSU's `ksud boot-patch` performs the following on the `init_boot.img` ramdi
 
 At boot, `ksuinit` loads `kernelsu.ko`, and KernelSU's `su` becomes available. The kernel (`boot.img`) is untouched, which avoids compatibility issues with MediaTek vendor modules.
 
----
-
-## Requirements
+### Requirements
 
 - Linux PC (x86_64 or aarch64)
 - `adb` / `fastboot` (Android Platform Tools)
 - Python 3.10 or newer
-- A `lapis` with an unlocked bootloader for the KernelSU route (not required for the `apk/` Shizuku route)
-- Shizuku running on the device for the `apk/` route
+- An unlocked bootloader on the `lapis`
 - The fastboot ROM (`.tgz`) or `init_boot.img` matching the current build
 - The device's KMI (auto-detected from `uname -r` when connected via `adb`)
 
 The `lapis` kernel is Xiaomi's MediaTek BSP (`lapis-v-oss`) and is most likely `android14-6.1`. If auto-detection fails, pass `--kmi android14-6.1`.
 
----
+### Usage
 
-## Usage
+1. Check the device and KMI:
 
-### 1. Check the device and KMI
+   ```bash
+   python3 -m lapisroot detect
+   ```
 
-```bash
-python3 -m lapisroot detect
-```
+   `kmi: android14-6.1` means it is OK. If it says `unauthorized`, approve "Allow USB debugging?" on the device.
 
-`kmi: android14-6.1` means it's OK. If it says `unauthorized`, approve "Allow USB debugging?" on the device.
+2. Review the plan:
 
-### 2. Review the plan
+   ```bash
+   python3 -m lapisroot plan --stock /path/to/init_boot.img
+   ```
 
-```bash
-python3 -m lapisroot plan --stock /path/to/init_boot.img
-```
+   `route: ready` means you can proceed. `route: locked` means the bootloader must be unlocked first.
 
-`route: ready` means you can proceed. `route: locked` means the bootloader must be unlocked first.
+3. Start temporary root:
 
-### 3. Start temporary root
+   ```bash
+   python3 -m lapisroot start \
+     --stock /path/to/init_boot.img \
+     --kmi android14-6.1 \
+     --allow-shell
+   ```
 
-```bash
-python3 -m lapisroot start \
-  --stock /path/to/init_boot.img \
-  --kmi android14-6.1 \
-  --allow-shell
-```
+   - `--stock` accepts a single `init_boot.img`, a directory of an extracted fastboot ROM, or the ROM's `.tgz` / `.zip` (only `init_boot.img` is extracted from archives).
+   - With `--allow-shell`, `adb shell su` works without the Manager's approval dialog. Without it, grant access in KernelSU Manager on the device.
+   - On first run, the tool also downloads the KernelSU Manager APK and installs it via `adb install` (disable with `--no-manager`).
+   - A confirmation prompt appears before execution. Use `--yes` only for automation.
 
-- `--stock` accepts a single `init_boot.img`, a directory of an extracted fastboot ROM, or the ROM's `.tgz` / `.zip` (only `init_boot.img` is extracted from archives).
-- With `--allow-shell`, `adb shell su` works without the Manager's approval dialog. Without it, grant access in KernelSU Manager on the device.
-- On first run, the tool also downloads the KernelSU Manager APK and installs it via `adb install` (disable with `--no-manager`).
-- A confirmation prompt appears before execution. Use `--yes` only for automation.
+4. Check status:
 
-### 4. Check status
+   ```bash
+   python3 -m lapisroot status
+   ```
 
-```bash
-python3 -m lapisroot status
-```
+5. Revert (end temporary root):
 
-### 5. Revert (end temporary root)
+   ```bash
+   python3 -m lapisroot stop
+   ```
 
-```bash
-python3 -m lapisroot stop
-```
-
-Writes the stock `init_boot` recorded in the journal back and reboots. Root is gone.
+   Writes the stock `init_boot` recorded in the journal back and reboots. Root is gone.
 
 ---
 
@@ -191,14 +220,21 @@ python3 -m lapisroot hunt --execute --yes
 `hunt` collects patch level, kernel, platform, SELinux, and build tags from the device and matches them against the bundled CVE catalog (`lapisroot/data/android_lpe_catalog.json`).
 
 - If no known public LPE applies to the build, it says so explicitly and exits. It never fabricates an exploit.
-- **No PoCs are bundled.** Only PoCs you place yourself at `pocs/<CVE>/manifest.json` (or `run.sh`) are executed by `--execute`. See `pocs/README.md` for the format.
+- **No PoCs are bundled.** Only PoCs you place yourself at `pocs/<CVE>/manifest.json` (or `run.sh`) are executed by `--execute`. See [`pocs/README.md`](pocs/README.md) for the format.
 - `--execute` does not run without interactive confirmation. Use `--yes` only for automation.
 - `--json` writes an execution report to `state-dir/reports/`.
 - The catalog can be replaced with `--catalog`. It is not an exhaustive database, so always cross-check it against vendor bulletins.
 
 See [`docs/cves.md`](docs/cves.md) for the catalog schema, the bundled entries, and the evaluation rules.
 
-A practical order for hunting known LPEs with a locked bootloader is `hunt` -> if nothing applies, `brom probe` -> if that still fails, unlock the bootloader.
+A practical order for hunting known LPEs with a locked bootloader is `hunt` → if nothing applies, `brom probe` → if that still fails, unlock the bootloader.
+
+---
+
+## Reporting issues
+
+- **Bugs**: open a **Bug report** issue. The template asks for the device, kernel, and build details needed to reproduce the problem.
+- **Security**: use the **Security report** template and keep working exploit code out of the public issue.
 
 ---
 
@@ -209,6 +245,7 @@ A practical order for hunting known LPEs with a locked bootloader is `hunt` -> i
 - Always use a stock image that matches the current build.
 - After a Xiaomi HyperOS update, `init_boot` changes, so you must re-extract the stock image and run `start` again.
 - The `apk/` Shizuku route grants only what the payload provides; it does not give KernelSU's persistent `su`.
+- Bootloader unlock eligibility is a separate Xiaomi policy; China-region devices are not eligible for the official unlock.
 
 ---
 
@@ -225,6 +262,9 @@ lapisroot/
   workspace.py  journal and stock image backup
   temp.py       start / stop / status orchestration
   cli.py        command line
+apk/            Shizuku APK source and build script
+docs/           CVE catalog documentation
+pocs/           drop-in PoC directory (no PoCs bundled)
 tests/          unit tests
 ```
 
@@ -245,7 +285,6 @@ print(kernelsu.patch(bundle, Path("init_boot.img"), Path("out"), kmi="android14-
 PY
 ```
 
-## Reporting issues
+## License
 
-- **Bugs**: open a **Bug report** issue. The template asks for the device, kernel, and build details needed to reproduce the problem.
-- **Security**: use the **Security report** template and keep working exploit code out of the public issue.
+MIT. See [`LICENSE`](LICENSE).
