@@ -101,11 +101,15 @@ class EvaluateTest(unittest.TestCase):
         )
         self.assertIs(hunt.evaluate(entry, facts(security_patch=None)), hunt.Status.UNKNOWN)
 
-    def test_bundled_catalog_has_no_candidate_for_this_build(self):
+    def test_bundled_catalog_flags_cve_2026_98260(self):
         catalog = hunt.load_catalog()
         self.assertGreater(len(catalog.entries), 0)
-        for entry in catalog.entries:
-            self.assertIsNot(hunt.evaluate(entry, facts()), hunt.Status.VULNERABLE, entry.id)
+        vulnerable = [
+            entry.id
+            for entry in catalog.entries
+            if hunt.evaluate(entry, facts()) is hunt.Status.VULNERABLE
+        ]
+        self.assertEqual(vulnerable, ["CVE-2026-98260"])
 
 
 class CatalogTest(unittest.TestCase):

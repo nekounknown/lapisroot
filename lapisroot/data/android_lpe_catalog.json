@@ -4,6 +4,15 @@
   "disclaimer": "Curated and non-exhaustive. Verify every entry against the vendor bulletin before trusting it.",
   "entries": [
     {
+      "id": "CVE-2026-98260",
+      "title": "POSIX CPU timer use-after-free in exec",
+      "component": "kernel",
+      "impact": "root",
+      "min_kernel": "5.7.0",
+      "max_kernel": "6.1.190",
+      "notes": "Linux exec de_thread() POSIX timer UAF; fixed in 6.1.191 (and 6.6.158/6.12.112/6.18.54/7.2.8). CVSS 7.8 HIGH. The reference lapis kernel 6.1.138 is in range."
+    },
+    {
       "id": "CVE-2022-0847",
       "title": "Dirty Pipe",
       "component": "kernel",

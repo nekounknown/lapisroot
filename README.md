@@ -2,6 +2,8 @@
 
 Target device: **Redmi Note 15 Pro 5G** (codename `lapis` / MediaTek **MT6878** Dimensity 7400-Ultra)
 
+> **Relevant CVE: [CVE-2026-98260](https://nvd.nist.gov/vuln/detail/CVE-2026-98260)** — Linux `exec` POSIX CPU timer use-after-free; affects 5.7–6.1.190, fixed in 6.1.191. The reference `lapis` kernel (6.1.138) is in range, and `hunt` flags it.
+
 A Linux toolkit with two routes to temporary root. The `lapisroot` CLI injects **KernelSU's LKM** (Loadable Kernel Module) into the `init_boot` partition; it does not replace the kernel itself, and `stop` writes the original `init_boot` back byte-for-byte. The `apk/` route runs a local payload through Shizuku and does not touch `init_boot` at all.
 
 - **`apk/` (Shizuku LPE)** — **no bootloader unlock required.** No fastboot, no `init_boot` write, no reboot.
@@ -11,16 +13,19 @@ The rest of this document describes the KernelSU route unless stated otherwise.
 
 ## CVE coverage at a glance
 
-The bundled catalog tracks public Android/MediaTek privilege-escalation issues, and `hunt` evaluates each one against the device build. **No exploits are shipped**: a PoC runs only if you place one under `pocs/<CVE>/`.
+The bundled catalog tracks seven public Android/MediaTek privilege-escalation issues, and `hunt` evaluates each one against the device build. **No exploits are shipped**: a PoC runs only if you place one under `pocs/<CVE>/`.
 
-| CVE | Title | Component | Status on a patched `lapis` build |
+| CVE | Title | Component | Status on the reference `lapis` build (kernel 6.1.138) |
 |---|---|---|---|
+| CVE-2026-98260 | POSIX CPU timer use-after-free in exec | kernel | **`vulnerable`** (6.1.138 < 6.1.191) |
 | CVE-2022-0847 | Dirty Pipe | kernel | `not-applicable` (kernel newer) |
 | CVE-2023-0386 | OverlayFS privilege escalation | kernel | `not-applicable` (kernel newer) |
 | CVE-2024-31317 | Zygote command injection | framework | `patched` (SDK newer) |
 | CVE-2024-53104 | USB video class out-of-bounds write | kernel | `patched` (patch date) |
 | CVE-2025-38352 | POSIX CPU timer use-after-free | kernel | `patched` (patch date) |
 | CVE-2025-21479 | Qualcomm GPU privilege escalation | gpu | `not-applicable` (Qualcomm only) |
+
+> **CVE-2026-98260 applies to the reference `lapis` kernel (6.1.138).** Affects 5.7–6.1.190, fixed in 6.1.191. CVSS 7.8 HIGH. NVD: <https://nvd.nist.gov/vuln/detail/CVE-2026-98260>
 
 ```bash
 python3 -m lapisroot hunt

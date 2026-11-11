@@ -46,6 +46,7 @@ Limits: the version comparison ignores vendor backports and the rest of the kern
 
 | CVE | Title | Component | Platform | Fixed patch | Kernel range | Max SDK |
 |---|---|---|---|---|---|---|
+| CVE-2026-98260 | POSIX CPU timer use-after-free in exec | kernel | - | - | 5.7.0 - 6.1.190 | - |
 | CVE-2022-0847 | Dirty Pipe | kernel | - | 2022-03-01 | <= 5.16.10 | - |
 | CVE-2023-0386 | OverlayFS privilege escalation | kernel | - | 2023-03-01 | <= 6.1.8 | - |
 | CVE-2024-31317 | Zygote command injection | framework | - | 2024-06-01 | - | 33 |
@@ -53,7 +54,9 @@ Limits: the version comparison ignores vendor backports and the rest of the kern
 | CVE-2025-38352 | POSIX CPU timer use-after-free | kernel | - | 2025-07-01 | - | - |
 | CVE-2025-21479 | Qualcomm GPU privilege escalation | gpu | qualcomm | 2025-06-01 | - | - |
 
-The catalog is curated and non-exhaustive. The bundled list deliberately contains no candidate for the current `lapis` build (SDK 36, patch 2026-09); `hunt` reports that explicitly.
+The catalog is curated and non-exhaustive. For the reference `lapis` build (kernel 6.1.138, SDK 36, patch 2026-09), `hunt` flags **CVE-2026-98260** as `vulnerable` (Linux 6.1 < 6.1.191); the other entries are `patched` or `not-applicable`.
+
+**CVE-2026-98260** is the entry that applies to the current `lapis` kernel: a POSIX CPU timer use-after-free in `exec` (`de_thread()` cleanup), CVSS 7.8 HIGH, fixed upstream in 6.1.191. NVD: <https://nvd.nist.gov/vuln/detail/CVE-2026-98260>
 
 ## Adding or replacing entries
 
