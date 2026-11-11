@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Agent / session state
+.omo/
+
+# APK build artifacts (debug.keystore is generated, never commit it)
+apk/build/
+apk/*.apk
+apk/*.apk.idsig
+apk/jniLibs/**/*.so
+*.keystore
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/

@@ -1,0 +1,59 @@
+{
+  "schema": 1,
+  "updated": "2026-11-12",
+  "disclaimer": "Curated and non-exhaustive. Verify every entry against the vendor bulletin before trusting it.",
+  "entries": [
+    {
+      "id": "CVE-2022-0847",
+      "title": "Dirty Pipe",
+      "component": "kernel",
+      "impact": "root",
+      "max_kernel": "5.16.10",
+      "fixed_security_patch": "2022-03-01",
+      "notes": "Linux 5.8+ pipe buffer bug; fixed in 5.16.11, 5.15.25 and 5.10.102."
+    },
+    {
+      "id": "CVE-2023-0386",
+      "title": "OverlayFS privilege escalation",
+      "component": "kernel",
+      "impact": "root",
+      "max_kernel": "6.1.8",
+      "fixed_security_patch": "2023-03-01",
+      "notes": "OverlayFS copy-up bug; fixed in 6.1.9 and 6.2."
+    },
+    {
+      "id": "CVE-2024-31317",
+      "title": "Zygote command injection",
+      "component": "framework",
+      "impact": "root",
+      "max_sdk": 33,
+      "fixed_security_patch": "2024-06-01",
+      "notes": "Requires adb; patched in the June 2024 Android bulletin."
+    },
+    {
+      "id": "CVE-2024-53104",
+      "title": "USB video class out-of-bounds write",
+      "component": "kernel",
+      "impact": "root",
+      "fixed_security_patch": "2024-12-01",
+      "notes": "Kernel USB gadget issue; patched in the December 2024 bulletin."
+    },
+    {
+      "id": "CVE-2025-38352",
+      "title": "POSIX CPU timer use-after-free",
+      "component": "kernel",
+      "impact": "root",
+      "fixed_security_patch": "2025-07-01",
+      "notes": "Exploited in the wild; confirm the exact vendor patch date."
+    },
+    {
+      "id": "CVE-2025-21479",
+      "title": "Qualcomm GPU privilege escalation",
+      "component": "gpu",
+      "platform": "qualcomm",
+      "impact": "root",
+      "fixed_security_patch": "2025-06-01",
+      "notes": "Qualcomm-only; not applicable to MediaTek MT6878."
+    }
+  ]
+}

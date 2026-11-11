@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lapisroot"
+version = "0.1.0"
+description = "Temporary-root toolkit for the Redmi Note 15 Pro 5G (lapis / MediaTek MT6878)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = []
+
+[project.scripts]
+lapisroot = "lapisroot.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["lapisroot*"]
