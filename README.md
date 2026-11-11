@@ -3,6 +3,7 @@
 > **Relevant CVE: [CVE-2026-98260](https://nvd.nist.gov/vuln/detail/CVE-2026-98260)** — Linux `exec` POSIX CPU timer use-after-free. Affects 5.7–6.1.190, fixed in 6.1.191. The reference `lapis` kernel (6.1.138) is in range, and `hunt` flags it.
 
 **Device:** Redmi Note 15 Pro 5G (codename `lapis`, MediaTek MT6878 Dimensity 7400-Ultra)
+Working version: OS3.0.309.0.WPPMIXM(Current)
 
 **Region support:** all regions. The tool keys off the `lapis` codename/platform and the stock `init_boot` you supply, not the sales region. Bootloader unlock eligibility is a separate Xiaomi policy; see [Bootloader is locked](#bootloader-is-locked).
 
