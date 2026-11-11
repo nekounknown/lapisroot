@@ -2,6 +2,8 @@
 
 Target device: **Redmi Note 15 Pro 5G** (codename `lapis` / MediaTek **MT6878** Dimensity 7400-Ultra)
 
+**Region support:** all regions. The tool is region-agnostic: it keys off the `lapis` codename/platform and the stock `init_boot` you supply, not the sales region. Bootloader unlock eligibility is a separate Xiaomi policy — see "Bootloader is locked" below.
+
 > **Relevant CVE: [CVE-2026-98260](https://nvd.nist.gov/vuln/detail/CVE-2026-98260)** — Linux `exec` POSIX CPU timer use-after-free; affects 5.7–6.1.190, fixed in 6.1.191. The reference `lapis` kernel (6.1.138) is in range, and `hunt` flags it.
 
 A Linux toolkit with two routes to temporary root. The `lapisroot` CLI injects **KernelSU's LKM** (Loadable Kernel Module) into the `init_boot` partition; it does not replace the kernel itself, and `stop` writes the original `init_boot` back byte-for-byte. The `apk/` route runs a local payload through Shizuku and does not touch `init_boot` at all.
@@ -165,7 +167,7 @@ python3 -m lapisroot start --stock init_boot.img --kmi android14-6.1 \
 2. Wait 72 hours to 30 days for the binding period
 3. Unlock with Mi Unlock (wipes data)
 
-Devices from the China region are not eligible for the official unlock. Commercial ADB unlock services exist, but this tool is not involved with them.
+Devices from the China region are not eligible for the official unlock. Commercial ADB unlock services exist, but this tool is not involved with them. This is a Xiaomi unlock-policy restriction, not a limitation of `lapisroot`; the tool itself supports all regions.
 
 ### Diagnose MediaTek BROM / preloader
 
