@@ -60,7 +60,7 @@ The `apk/` project gets a shell on the device without touching `init_boot` or fa
 3. Launch it: `adb shell am start -n com.lapisroot.exploit/.MainActivity --ez auto true`.
 4. Grant the Shizuku permission prompt.
 
-The APK runs `libexploit.so shell` through Shizuku's shell and prints the result in the app log and `last_run.txt`. This route **does not require a bootloader unlock**, does not flash anything, and does not reboot. What it can do is limited to the payload and the device build; it does not provide KernelSU's persistent `su`.
+The APK selects the payload from `os.version` — `libexploit_138.so` for kernel `6.1.138-...g51f8c580613d` or `libexploit_157.so` for `6.1.157-...geadf9a793a09` — and runs its `fake` profile through Shizuku's shell. Results are printed in the app log and `last_run.txt`; unsupported kernels are rejected with a log message. This route **does not require a bootloader unlock**, does not flash anything, and does not reboot. What it can do is limited to the payload and the device build; it does not provide KernelSU's persistent `su`.
 
 ---
 

@@ -31,7 +31,7 @@ javac -source 17 -target 17 -classpath "$PLATFORM:$LIBS" -d "$OUT/classes" \
 cp "$OUT/base.apk" "$OUT/unsigned.apk"
 cd "$OUT"
 zip -q -j unsigned.apk dex/classes*.dex
-cp "$ROOT/jniLibs/arm64-v8a/libexploit.so" lib/arm64-v8a/
+cp "$ROOT/jniLibs/arm64-v8a/"*.so lib/arm64-v8a/
 zip -q -r unsigned.apk lib
 
 "$BT/zipalign" -f 4 unsigned.apk aligned.apk
