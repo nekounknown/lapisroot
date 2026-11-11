@@ -151,6 +151,8 @@ python3 -m lapisroot hunt --execute --yes
 - `--json` writes an execution report to `state-dir/reports/`.
 - The catalog can be replaced with `--catalog`. It is not an exhaustive database, so always cross-check it against vendor bulletins.
 
+See [`docs/cves.md`](docs/cves.md) for the catalog schema, the bundled entries, and the evaluation rules.
+
 A practical order for hunting known LPEs with a locked bootloader is `hunt` -> if nothing applies, `brom probe` -> if that still fails, unlock the bootloader.
 
 ---
