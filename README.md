@@ -242,3 +242,8 @@ bundle = kernelsu.KsuBundle(version="local", ksud=Path("/path/to/ksud"))
 print(kernelsu.patch(bundle, Path("init_boot.img"), Path("out"), kmi="android14-6.1"))
 PY
 ```
+
+## Reporting issues
+
+- **Bugs**: open a **Bug report** issue. The template asks for the device, kernel, and build details needed to reproduce the problem.
+- **Security**: use the **Security report** template and keep working exploit code out of the public issue.
