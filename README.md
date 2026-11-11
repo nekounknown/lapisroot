@@ -9,6 +9,25 @@ A Linux toolkit with two routes to temporary root. The `lapisroot` CLI injects *
 
 The rest of this document describes the KernelSU route unless stated otherwise.
 
+## CVE coverage at a glance
+
+The bundled catalog tracks public Android/MediaTek privilege-escalation issues, and `hunt` evaluates each one against the device build. **No exploits are shipped**: a PoC runs only if you place one under `pocs/<CVE>/`.
+
+| CVE | Title | Component | Status on a patched `lapis` build |
+|---|---|---|---|
+| CVE-2022-0847 | Dirty Pipe | kernel | `not-applicable` (kernel newer) |
+| CVE-2023-0386 | OverlayFS privilege escalation | kernel | `not-applicable` (kernel newer) |
+| CVE-2024-31317 | Zygote command injection | framework | `patched` (SDK newer) |
+| CVE-2024-53104 | USB video class out-of-bounds write | kernel | `patched` (patch date) |
+| CVE-2025-38352 | POSIX CPU timer use-after-free | kernel | `patched` (patch date) |
+| CVE-2025-21479 | Qualcomm GPU privilege escalation | gpu | `not-applicable` (Qualcomm only) |
+
+```bash
+python3 -m lapisroot hunt
+```
+
+The catalog is curated and non-exhaustive; verify every entry against the vendor bulletin. Schema, evaluation rules, and how to add entries: [`docs/cves.md`](docs/cves.md).
+
 ---
 
 ## What you should know first (important)
