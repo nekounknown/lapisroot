@@ -82,7 +82,9 @@ The `apk/` project gets a shell on the device without touching `init_boot` or fa
 
 The app selects the payload from `os.version` and runs its `fake` profile through Shizuku's shell. Results are printed in the app log and `last_run.txt`.
 
-After a real reboot, `BootReceiver` starts `AutoRootService`. The service waits up to 90 s for the Shizuku binder, runs the payload, records the boot, posts the Pwned notification/overlay, and soft-reboots (`su -c 'stop; start'`) when the payload reports root. If Shizuku is not ready, it posts a "start Shizuku" notification and stops. A soft reboot restarts userspace only, so the service does not loop on the same boot.
+After a real reboot, `BootReceiver` starts `AutoRootService` (unless "Auto-root on boot" is disabled in the app). The service holds a partial wake lock, waits up to 5 minutes for the Shizuku binder, retries the payload up to 3 times when it reports `safe to retry`, verifies root with `su -c id`, records the boot, posts the Pwned notification/overlay, and soft-reboots (`su -c 'stop; start'`) when root is confirmed. If Shizuku is not ready, it posts a "Shizuku required" notification that opens the app. A soft reboot restarts userspace only, so the service does not loop on the same boot.
+
+The app has an "Auto-root on boot" checkbox (enabled by default) that controls `BootReceiver`.
 
 Extra entry points:
 
