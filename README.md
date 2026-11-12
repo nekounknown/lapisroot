@@ -7,6 +7,8 @@ Working version: OS3.0.309.0.WPPMIXM(Current)
 
 **Region support:** all regions. The tool keys off the `lapis` codename/platform and the stock `init_boot` you supply, not the sales region. Bootloader unlock eligibility is a separate Xiaomi policy; see [Bootloader is locked](#bootloader-is-locked).
 
+But remember, i don`t tested it so i dont think work well.
+
 ---
 
 ## What you should know first
