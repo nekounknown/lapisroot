@@ -62,6 +62,7 @@ The `apk/` project gets a shell on the device without touching `init_boot` or fa
 - Android device with USB debugging enabled
 - Shizuku running (started via `adb` or wireless debugging)
 - The `lapisroot.apk` release asset (`arm64-v8a`)
+- Notification permission and "Display over other apps" for the Pwned notification/overlay
 
 ### Usage
 
@@ -81,13 +82,15 @@ The `apk/` project gets a shell on the device without touching `init_boot` or fa
 
 The app selects the payload from `os.version` and runs its `fake` profile through Shizuku's shell. Results are printed in the app log and `last_run.txt`.
 
+After a real reboot, `BootReceiver` starts `AutoRootService`. The service waits up to 90 s for the Shizuku binder, runs the payload, records the boot, posts the Pwned notification/overlay, and soft-reboots (`su -c 'stop; start'`) when the payload reports root. If Shizuku is not ready, it posts a "start Shizuku" notification and stops. A soft reboot restarts userspace only, so the service does not loop on the same boot.
+
 Extra entry points:
 
 ```bash
 # Run the local perf diagnostic
 adb shell am start -n com.lapisroot.exploit/.MainActivity --ez perfdiag true
 
-# Trigger the Pwned notification/screen directly
+# Trigger the Pwned notification/overlay directly
 adb shell am start -n com.lapisroot.exploit/.MainActivity --ez pwned true
 ```
 
