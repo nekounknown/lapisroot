@@ -248,9 +248,12 @@ A practical order for hunting known LPEs with a locked bootloader is `hunt` → 
 
 ## Security notes
 
-- `PwnedActivity` is not exported, and the exploit no longer starts just
-  because the Shizuku binder arrived: it requires an explicit tap in the
-  app, or an explicit `adb shell am start --ez auto true` from the shell.
+- `PwnedActivity` is not exported. Auto-start when the Shizuku binder
+  arrives is kept, but gated by the in-app "Auto-start when Shizuku
+  connects" toggle (a setting other apps cannot change) and fires at
+  most once per binder connection. Turn the toggle off to require an
+  explicit tap (or an explicit `adb shell am start --ez auto true` from
+  the shell) instead.
 - "Auto-root on boot" now defaults to **off**. Existing installs keep
   their saved setting; enable it again in the app if you want it.
 - After a successful run the app tries to restore SELinux to Enforcing

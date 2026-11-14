@@ -15,6 +15,7 @@ build/
 .omo/
 
 # APK build artifacts (debug.keystore is generated, never commit it)
+apk/.libs/
 apk/build/
 apk/*.apk
 apk/*.apk.idsig
