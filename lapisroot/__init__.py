@@ -12,7 +12,7 @@ try:
 
     __version__ = _package_version("lapisroot")
 except Exception:  # running from a source tree that is not installed
-    __version__ = "0.2.2"
+    __version__ = "0.2.3"
 
 #: Device codename reported by ``ro.product.device`` / ``fastboot getvar product``.
 CODENAME = "lapis"
