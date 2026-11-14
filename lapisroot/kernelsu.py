@@ -9,6 +9,7 @@ MediaTek device with vendor kernel modules.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import platform as _platform
@@ -88,6 +89,33 @@ def host_ksud_asset(machine: str | None = None, system: str | None = None) -> st
 class Release:
     tag: str
     assets: dict[str, str]
+    #: asset name -> expected sha256 hex, from the GitHub API ``digest``
+    #: field when the release provides one. Empty when unknown.
+    digests: dict[str, str] = field(default_factory=dict)
+
+
+def sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with Path(path).open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def verify_digest(data_or_path, expected: str | None, name: str) -> None:
+    """Fail closed when a release digest is known and does not match."""
+    if not expected:
+        return
+    actual = (sha256_bytes(data_or_path) if isinstance(data_or_path, bytes)
+              else sha256_file(data_or_path))
+    if actual.lower() != expected.lower():
+        raise PatchError(
+            f"sha256 mismatch for {name}: expected {expected}, got {actual}"
+        )
 
 
 @dataclass(frozen=True)
@@ -127,7 +155,13 @@ def resolve_release(
         for asset in data.get("assets", [])
         if "name" in asset and "browser_download_url" in asset
     }
-    return Release(tag=data.get("tag_name", version), assets=assets)
+    digests = {}
+    for asset in data.get("assets", []):
+        digest = str(asset.get("digest") or "")
+        if digest.startswith("sha256:"):
+            digests[asset["name"]] = digest.removeprefix("sha256:")
+    return Release(tag=data.get("tag_name", version), assets=assets,
+                   digests=digests)
 
 
 def pick_manager_asset(assets: dict[str, str]) -> str | None:
@@ -158,8 +192,16 @@ def prepare(
         raise PatchError(f"release {release.tag} has no asset named {ksud_name}")
 
     ksud_path = cache / f"ksud-{release.tag}-{ksud_name}"
+    ksud_digest = release.digests.get(ksud_name)
+    if ksud_path.exists() and ksud_digest:
+        try:
+            verify_digest(ksud_path, ksud_digest, ksud_name)
+        except PatchError:
+            ksud_path.unlink()  # poisoned/stale cache: fetch it again
     if not ksud_path.exists():
-        ksud_path.write_bytes(opener(ksud_url))
+        data = opener(ksud_url)
+        verify_digest(data, ksud_digest, ksud_name)
+        ksud_path.write_bytes(data)
         os.chmod(ksud_path, 0o755)
 
     probe = runner([str(ksud_path), "--version"], timeout=20.0)
@@ -178,7 +220,9 @@ def prepare(
             manager_apk = cache / name
             if not manager_apk.exists():
                 try:
-                    manager_apk.write_bytes(opener(release.assets[name]))
+                    data = opener(release.assets[name])
+                    verify_digest(data, release.digests.get(name), name)
+                    manager_apk.write_bytes(data)
                 except LapisRootError as exc:
                     manager_apk = None
                     manager_error = str(exc)

@@ -6,12 +6,25 @@ SDK="${ANDROID_SDK_ROOT:-/opt/android-sdk}"
 BT="${ANDROID_BUILD_TOOLS:-/usr/bin}"
 PLATFORM="$SDK/platforms/android-34/android.jar"
 OUT="$ROOT/build"
-LIBS="/tmp/opencode/apk-libs/api/classes.jar:/tmp/opencode/apk-libs/provider/classes.jar:/tmp/opencode/apk-libs/aidl-classes.jar:/tmp/opencode/apk-libs/shared-classes.jar:/tmp/opencode/apk-libs/annotation-jvm.jar"
-SHIZUKU_API="/tmp/opencode/apk-libs/api/classes.jar"
-SHIZUKU_PROVIDER="/tmp/opencode/apk-libs/provider/classes.jar"
-SHIZUKU_AIDL="/tmp/opencode/apk-libs/aidl-classes.jar"
-SHIZUKU_SHARED="/tmp/opencode/apk-libs/shared-classes.jar"
-ANNOTATION="/tmp/opencode/apk-libs/annotation-jvm.jar"
+# Shizuku API/provider jars. Point APK_LIBS_DIR at a directory containing
+# api/classes.jar, provider/classes.jar, aidl-classes.jar,
+# shared-classes.jar and annotation-jvm.jar (e.g. extracted from the
+# Shizuku AARs published on Maven Central / the Shizuku GitHub release).
+APK_LIBS_DIR="${APK_LIBS_DIR:-$ROOT/.libs}"
+LIBS="$APK_LIBS_DIR/api/classes.jar:$APK_LIBS_DIR/provider/classes.jar:$APK_LIBS_DIR/aidl-classes.jar:$APK_LIBS_DIR/shared-classes.jar:$APK_LIBS_DIR/annotation-jvm.jar"
+SHIZUKU_API="$APK_LIBS_DIR/api/classes.jar"
+SHIZUKU_PROVIDER="$APK_LIBS_DIR/provider/classes.jar"
+SHIZUKU_AIDL="$APK_LIBS_DIR/aidl-classes.jar"
+SHIZUKU_SHARED="$APK_LIBS_DIR/shared-classes.jar"
+ANNOTATION="$APK_LIBS_DIR/annotation-jvm.jar"
+for jar in "$SHIZUKU_API" "$SHIZUKU_PROVIDER" "$SHIZUKU_AIDL" "$SHIZUKU_SHARED" "$ANNOTATION"; do
+    if [ ! -f "$jar" ]; then
+        echo "missing Shizuku jar: $jar (set APK_LIBS_DIR)" >&2; exit 1
+    fi
+done
+if [ ! -d "$ROOT/jniLibs/arm64-v8a" ] || ! ls "$ROOT/jniLibs/arm64-v8a/"*.so >/dev/null 2>&1; then
+    echo "missing native payloads in $ROOT/jniLibs/arm64-v8a/ (not tracked in git)" >&2; exit 1
+fi
 
 rm -rf "$OUT"
 mkdir -p "$OUT/classes" "$OUT/dex" "$OUT/lib/arm64-v8a"

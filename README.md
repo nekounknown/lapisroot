@@ -246,6 +246,35 @@ A practical order for hunting known LPEs with a locked bootloader is `hunt` → 
 
 ---
 
+## Security notes
+
+- `PwnedActivity` is not exported, and the exploit no longer starts just
+  because the Shizuku binder arrived: it requires an explicit tap in the
+  app, or an explicit `adb shell am start --ez auto true` from the shell.
+- "Auto-root on boot" now defaults to **off**. Existing installs keep
+  their saved setting; enable it again in the app if you want it.
+- After a successful run the app tries to restore SELinux to Enforcing
+  (`setenforce 1`) and verifies `getenforce` before soft-rebooting. If
+  SELinux is still Permissive it refuses the soft reboot and says so in
+  the log instead of silently leaving the device permissive.
+- The CLI verifies downloaded `ksud` / Manager APK assets against the
+  `sha256:` digest published by the GitHub API when one is available,
+  and re-verifies (or discards) a cached `ksud` on every run.
+
+## Credits and payload provenance
+
+The native payload identifies its KernelSU handoff flow as
+`ghostlock-init`, and CVE-2026-98260 was publicly demonstrated by the
+Infinity Core research (v4bel) with public exploits for other devices.
+The payload binaries in the releases are derived from / inspired by
+that public research; the payload source is not tracked in this
+repository, so this provenance note is the record of it.
+
+If the payload prints `reboot before rerun (T28_NO_HOLD=1 to exit
+anyway)`, it is holding a zombie process on purpose after a failed
+plant: reboot before running it again, or set the environment variable
+`T28_NO_HOLD=1` to make it exit anyway (not recommended).
+
 ## Limitations and disclaimer
 
 - This project does not bypass bootloader unlock, disable AVB, or spoof Play Integrity.
