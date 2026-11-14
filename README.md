@@ -261,8 +261,9 @@ A practical order for hunting known LPEs with a locked bootloader is `hunt` → 
   SELinux is still Permissive it refuses the soft reboot and says so in
   the log instead of silently leaving the device permissive.
 - The CLI verifies downloaded `ksud` / Manager APK assets against the
-  `sha256:` digest published by the GitHub API when one is available,
-  and re-verifies (or discards) a cached `ksud` on every run.
+  `sha256:` digest published by the GitHub API, and re-verifies (or
+  discards) a cached `ksud` on every run. Verification is fail-closed:
+  if the API publishes no digest for an asset, the download is refused.
 
 ## Credits and payload provenance
 

@@ -77,7 +77,7 @@ class ReleaseTest(unittest.TestCase):
                     runner=runner, fetch_manager=False,
                 )
 
-    def test_prepare_downloads_and_verifies(self):
+    def test_prepare_rejects_ksud_without_digest(self):
         with tempfile.TemporaryDirectory() as temp:
             payload = {
                 "tag_name": "v3.3.1",
@@ -86,9 +86,38 @@ class ReleaseTest(unittest.TestCase):
                         "name": "ksud-x86_64-unknown-linux-musl",
                         "browser_download_url": "http://example/ksud",
                     },
+                ],
+            }
+
+            def opener(url):
+                if "api.github.com" in url:
+                    return json.dumps(payload).encode()
+                return b"ksud-binary"
+
+            def runner(argv, **kwargs):
+                return Result(tuple(argv), 0, "ksud 3.3.1\n", "")
+
+            with self.assertRaises(PatchError):
+                kernelsu.prepare(
+                    "latest", state_dir=Path(temp), opener=opener,
+                    runner=runner, fetch_manager=False,
+                )
+
+    def test_prepare_downloads_and_verifies(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as temp:
+            payload = {
+                "tag_name": "v3.3.1",
+                "assets": [
+                    {
+                        "name": "ksud-x86_64-unknown-linux-musl",
+                        "browser_download_url": "http://example/ksud",
+                        "digest": "sha256:" + hashlib.sha256(b"ksud-binary").hexdigest(),
+                    },
                     {
                         "name": "KernelSU_v3.3.1_1-release.apk",
                         "browser_download_url": "http://example/manager.apk",
+                        "digest": "sha256:" + hashlib.sha256(b"apk-binary").hexdigest(),
                     },
                 ],
             }

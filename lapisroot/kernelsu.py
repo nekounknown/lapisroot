@@ -107,9 +107,15 @@ def sha256_file(path: Path) -> str:
 
 
 def verify_digest(data_or_path, expected: str | None, name: str) -> None:
-    """Fail closed when a release digest is known and does not match."""
+    """Verify bytes or a file against the GitHub API sha256 digest.
+
+    Fail closed: when the release publishes no digest there is nothing
+    to verify against, so refuse instead of trusting the bytes.
+    """
     if not expected:
-        return
+        raise PatchError(
+            f"no sha256 digest published for {name}; refusing unverified bytes"
+        )
     actual = (sha256_bytes(data_or_path) if isinstance(data_or_path, bytes)
               else sha256_file(data_or_path))
     if actual.lower() != expected.lower():
@@ -193,11 +199,11 @@ def prepare(
 
     ksud_path = cache / f"ksud-{release.tag}-{ksud_name}"
     ksud_digest = release.digests.get(ksud_name)
-    if ksud_path.exists() and ksud_digest:
+    if ksud_path.exists():
         try:
             verify_digest(ksud_path, ksud_digest, ksud_name)
         except PatchError:
-            ksud_path.unlink()  # poisoned/stale cache: fetch it again
+            ksud_path.unlink()  # unverifiable/poisoned cache: fetch it again
     if not ksud_path.exists():
         data = opener(ksud_url)
         verify_digest(data, ksud_digest, ksud_name)

@@ -7,7 +7,12 @@ the partition that must be patched on Android 13+ launch devices.
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+try:
+    from importlib.metadata import version as _package_version
+
+    __version__ = _package_version("lapisroot")
+except Exception:  # running from a source tree that is not installed
+    __version__ = "0.2.2"
 
 #: Device codename reported by ``ro.product.device`` / ``fastboot getvar product``.
 CODENAME = "lapis"
